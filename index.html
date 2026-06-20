@@ -648,6 +648,24 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #aabccf;
         }
+
+        /* ===== 搜索提示 ===== */
+        .search-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.70);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            z-index: 15;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            animation: popFade 0.2s ease;
+        }
     </style>
 </head>
 <body>
@@ -1136,6 +1154,7 @@
         let selectedId = null; // 当前选中的大学ID
         let chartInstance = null;
         let geoData = null;
+        let isMapLoaded = false;
 
         // DOM 引用
         const chartDom = document.getElementById('map-chart');
@@ -1244,32 +1263,70 @@
         async function loadGeoAndRender() {
             try {
                 loadingOverlay.classList.remove('hidden');
+                // 使用更稳定的 ECharts 官方示例数据源
                 const resp = await fetch(
-                    'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json'
+                    'https://cdn.jsdelivr.net/npm/echarts@5.4.3/map/json/china.json'
                 );
-                if (!resp.ok) throw new Error('网络请求失败');
+                if (!resp.ok) throw new Error('网络请求失败 (HTTP ' + resp.status + ')');
                 geoData = await resp.json();
                 echarts.registerMap('china', geoData);
+                isMapLoaded = true;
                 renderMap();
                 loadingOverlay.classList.add('hidden');
             } catch (err) {
                 console.error('地图数据加载失败:', err);
                 loadingOverlay.classList.add('hidden');
-                // 显示错误信息
+                // 显示错误信息并提供一个重试按钮（简单提示）
                 chartInstance.setOption({
                     title: {
-                        text: '⚠️ 地图加载失败\n请检查网络后刷新重试',
+                        text: '⚠️ 地图加载失败\n' + err.message + '\n请刷新页面重试',
                         left: 'center',
                         top: 'center',
                         textStyle: { fontSize: 16, color: '#5a7a9a', lineHeight: 30 }
                     }
                 });
+                // 显示可点击重试的提示（通过覆盖层）
+                showRetryMessage();
             }
+        }
+
+        function showRetryMessage() {
+            const container = document.getElementById('map-container');
+            const old = container.querySelector('.retry-overlay');
+            if (old) old.remove();
+            const div = document.createElement('div');
+            div.className = 'retry-overlay';
+            div.style.cssText = `
+                position: absolute;
+                inset: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: rgba(234, 241, 250, 0.80);
+                z-index: 6;
+                pointer-events: auto;
+                cursor: pointer;
+                font-family: var(--font);
+            `;
+            div.innerHTML = `
+                <div style="background: white; padding: 24px 40px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.10); text-align: center;">
+                    <div style="font-size: 40px; margin-bottom: 10px;">🔄</div>
+                    <div style="font-size: 18px; font-weight: 600; color: #1e2a3a;">地图加载失败</div>
+                    <div style="font-size: 14px; color: #5a7a9a; margin: 8px 0 16px;">请检查网络后点击重试</div>
+                    <button id="retryBtn" style="background: var(--primary); color: white; border: none; padding: 10px 30px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer;">重试加载</button>
+                </div>
+            `;
+            container.appendChild(div);
+            document.getElementById('retryBtn').addEventListener('click', () => {
+                div.remove();
+                loadGeoAndRender();
+            });
         }
 
         /** 渲染地图（根据当前筛选/搜索状态） */
         function renderMap() {
-            if (!chartInstance || !geoData) return;
+            if (!chartInstance || !isMapLoaded || !geoData) return;
 
             const filtered = getFilteredData();
             const total = allUniversities.length;
@@ -1292,7 +1349,7 @@
             const highlightId = selectedId;
             const option = {
                 backgroundColor: 'transparent',
-                tooltip: { show: false }, // 使用自定义弹窗
+                tooltip: { show: false },
                 geo: {
                     map: 'china',
                     roam: true,
@@ -1387,24 +1444,25 @@
                 hidePopup();
             }
 
-            // 绑定点击事件
+            // 移除旧的事件监听，避免重复绑定
             chartInstance.off('click');
             chartInstance.on('click', (params) => {
-                if (params.componentType === 'series' && params.data) {
+                // 确保 params 和 params.data 存在
+                if (params && params.componentType === 'series' && params.data && params.data.id) {
                     const id = params.data.id;
                     const uni = findUniversity(id);
                     if (uni) {
-                        showPopup(uni, params.event);
+                        // 传递事件对象，但注意可能为 null
+                        showPopup(uni, params.event || null);
                         selectedId = id;
                         renderMap(); // 重新渲染以高亮
                     }
                 }
             });
 
-            // hover时改变光标
             chartInstance.off('mouseover');
             chartInstance.on('mouseover', (params) => {
-                if (params.componentType === 'series') {
+                if (params && params.componentType === 'series') {
                     chartDom.style.cursor = 'pointer';
                 }
             });
@@ -1458,22 +1516,25 @@
             const container = document.getElementById('map-container');
             const containerRect = container.getBoundingClientRect();
 
-            // 使用事件位置或计算位置
             let x, y;
-            if (event && event.event) {
-                const e = event.event;
-                x = e.clientX - containerRect.left;
-                y = e.clientY - containerRect.top - 20;
-            } else {
-                // 后备：从数据中获取坐标转像素 (粗略)
+            // 如果有事件对象，使用事件坐标
+            if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
+                x = event.clientX - containerRect.left;
+                y = event.clientY - containerRect.top - 20;
+            } else if (chartInstance) {
+                // 后备：从数据中获取坐标转像素
                 const coord = chartInstance.convertToPixel('geo', [uni.lng, uni.lat]);
-                if (coord) {
+                if (coord && Array.isArray(coord) && coord.length === 2) {
                     x = coord[0];
                     y = coord[1] - 30;
                 } else {
+                    // 默认居中
                     x = containerRect.width / 2;
                     y = containerRect.height / 2 - 40;
                 }
+            } else {
+                x = containerRect.width / 2;
+                y = containerRect.height / 2 - 40;
             }
 
             // 确保弹窗不超出边界
@@ -1513,12 +1574,12 @@
             // 如果有搜索词，尝试定位到第一个匹配的大学
             const filtered = getFilteredData();
             if (query && filtered.length > 0) {
-                // 找到第一个匹配的（按名称匹配度排序）
+                // 找到第一个匹配的（按名称包含）
                 const matched = filtered.find(u => u.name.toLowerCase().includes(query.toLowerCase()));
                 if (matched) {
                     selectedId = matched.id;
                     // 定位地图到该点
-                    if (chartInstance && geoData) {
+                    if (chartInstance && isMapLoaded) {
                         chartInstance.setOption({
                             geo: {
                                 center: [matched.lng, matched.lat],
@@ -1537,7 +1598,7 @@
                 selectedId = null;
                 hidePopup();
                 // 恢复地图视野
-                if (chartInstance && geoData) {
+                if (chartInstance && isMapLoaded) {
                     chartInstance.setOption({
                         geo: {
                             center: [104, 35],
@@ -1551,7 +1612,6 @@
                 selectedId = null;
                 hidePopup();
                 renderMap();
-                // 显示提示（通过弹窗短暂提示）
                 showSearchToast('未找到匹配的大学');
             }
         }
@@ -1559,28 +1619,13 @@
         let toastTimer = null;
 
         function showSearchToast(msg) {
-            const old = document.querySelector('.search-toast');
+            const container = document.getElementById('map-container');
+            const old = container.querySelector('.search-toast');
             if (old) old.remove();
             const div = document.createElement('div');
             div.className = 'search-toast';
             div.textContent = msg;
-            Object.assign(div.style, {
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                background: 'rgba(0,0,0,0.70)',
-                color: '#fff',
-                padding: '12px 28px',
-                borderRadius: '12px',
-                fontSize: '15px',
-                fontWeight: '500',
-                zIndex: '15',
-                pointerEvents: 'none',
-                backdropFilter: 'blur(4px)',
-                animation: 'popFade 0.2s ease',
-            });
-            document.getElementById('map-container').appendChild(div);
+            container.appendChild(div);
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => div.remove(), 1500);
         }
@@ -1645,7 +1690,7 @@
             else renderMap();
             // 定位到新大学
             selectedId = newUni.id;
-            if (chartInstance && geoData) {
+            if (chartInstance && isMapLoaded) {
                 chartInstance.setOption({
                     geo: { center: [newUni.lng, newUni.lat], zoom: 4.5 }
                 });
@@ -1696,21 +1741,14 @@
                 hidePopup();
                 renderMap();
             });
-            // 点击地图空白关闭弹窗
-            chartDom.addEventListener('click', (e) => {
-                // 检查是否点击在图表上但未命中散点
-                // 使用ECharts的click事件已经处理了，这里额外处理点击空白区域
-            });
 
             // ---- 添加大学 ----
             addUniBtn.addEventListener('click', openAddModal);
             modalCancel.addEventListener('click', closeAddModal);
             modalSubmit.addEventListener('click', handleAddSubmit);
-            // 点击遮罩关闭
             addModal.addEventListener('click', (e) => {
                 if (e.target === addModal) closeAddModal();
             });
-            // 回车提交
             document.querySelectorAll('#addModal input, #addModal select, #addModal textarea').forEach(el => {
                 el.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') handleAddSubmit();
@@ -1727,7 +1765,6 @@
                         renderMap();
                     }
                 }
-                // Ctrl+F 聚焦搜索
                 if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
                     e.preventDefault();
                     searchInput.focus();
@@ -1737,11 +1774,10 @@
         }
 
         // 页面加载完成后启动
-        document.addEventListener('DOMContentLoaded', init);
-
-        // 也支持直接调用（如果DOM已加载）
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             init();
+        } else {
+            document.addEventListener('DOMContentLoaded', init);
         }
     </script>
 
