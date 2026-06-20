@@ -4,31 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5" />
     <title>中国大学地图 · 高校分布</title>
-    <!-- 使用 ECharts 5 -->
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js">
     </script>
     <style>
-        /* ===== 全局重置 & CSS变量 ===== */
+        /* ===== 全局样式（与之前相同，略作精简） ===== */
         :root {
             --primary: #2b7bb6;
             --primary-light: #e6f0fa;
             --primary-dark: #1a5a8a;
             --bg: #f5f9fe;
             --card-bg: #ffffff;
-            --shadow: 0 8px 30px rgba(43, 123, 182, 0.15);
             --radius: 16px;
-            --transition: 0.25s ease;
-            --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            --red-marker: #e74c3c;
-            --red-hover: #c0392b;
+            --font: 'Segoe UI', system-ui, sans-serif;
         }
-
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: var(--font);
             background: var(--bg);
@@ -38,12 +31,9 @@
             flex-direction: column;
             overflow: hidden;
         }
-
-        /* ===== 顶部工具栏 ===== */
         .toolbar {
             background: var(--card-bg);
             padding: 14px 24px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
             display: flex;
             flex-wrap: wrap;
             align-items: center;
@@ -52,14 +42,12 @@
             flex-shrink: 0;
             border-bottom: 1px solid rgba(43, 123, 182, 0.10);
         }
-
         .toolbar-left {
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .logo {
             display: flex;
             align-items: center;
@@ -67,7 +55,6 @@
             font-size: 20px;
             font-weight: 700;
             color: var(--primary);
-            letter-spacing: -0.3px;
             user-select: none;
         }
         .logo-icon {
@@ -79,7 +66,6 @@
             font-size: 14px;
             margin-left: 2px;
         }
-
         .toolbar-center {
             flex: 1 1 280px;
             display: flex;
@@ -87,12 +73,9 @@
             gap: 10px;
             min-width: 180px;
         }
-
         .search-box {
             flex: 1;
             position: relative;
-            display: flex;
-            align-items: center;
         }
         .search-box input {
             width: 100%;
@@ -101,17 +84,12 @@
             border-radius: 30px;
             font-size: 14px;
             background: var(--bg);
-            transition: var(--transition);
             outline: none;
-            color: #1e2a3a;
+            transition: 0.25s;
         }
         .search-box input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(43, 123, 182, 0.12);
             background: #fff;
-        }
-        .search-box input::placeholder {
-            color: #9ab0c9;
         }
         .search-box .search-icon {
             position: absolute;
@@ -129,22 +107,16 @@
             color: #b0c8dd;
             cursor: pointer;
             display: none;
-            padding: 2px 4px;
         }
         .search-box .clear-btn.visible {
             display: block;
         }
-        .search-box .clear-btn:hover {
-            color: var(--primary);
-        }
-
         .toolbar-right {
             display: flex;
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
         }
-
         .btn-add {
             background: var(--primary);
             color: #fff;
@@ -154,7 +126,7 @@
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
+            transition: 0.25s;
             display: flex;
             align-items: center;
             gap: 6px;
@@ -162,24 +134,15 @@
         }
         .btn-add:hover {
             background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 14px rgba(43, 123, 182, 0.30);
         }
-        .btn-add:active {
-            transform: scale(0.96);
-        }
-
         .stats-badge {
             font-size: 13px;
             color: #5a7a9a;
             background: var(--bg);
             padding: 4px 14px;
             border-radius: 20px;
-            white-space: nowrap;
             border: 1px solid #dce7f3;
         }
-
-        /* ===== 筛选栏 ===== */
         .filter-bar {
             background: var(--card-bg);
             padding: 8px 24px 12px 24px;
@@ -194,7 +157,6 @@
             font-size: 13px;
             font-weight: 600;
             color: #5a7a9a;
-            margin-right: 4px;
         }
         .filter-btn {
             padding: 4px 16px;
@@ -205,7 +167,7 @@
             font-weight: 500;
             color: #3a5a7a;
             cursor: pointer;
-            transition: var(--transition);
+            transition: 0.25s;
             white-space: nowrap;
         }
         .filter-btn:hover {
@@ -217,14 +179,7 @@
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
-            box-shadow: 0 2px 8px rgba(43, 123, 182, 0.25);
         }
-        .filter-btn.active:hover {
-            background: var(--primary-dark);
-            border-color: var(--primary-dark);
-        }
-
-        /* ===== 地图容器 ===== */
         #map-container {
             flex: 1;
             position: relative;
@@ -236,8 +191,6 @@
             height: 100%;
             background: transparent;
         }
-
-        /* ===== 加载状态 ===== */
         .loading-overlay {
             position: absolute;
             inset: 0;
@@ -248,7 +201,7 @@
             justify-content: center;
             z-index: 5;
             pointer-events: none;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.4s;
         }
         .loading-overlay.hidden {
             opacity: 0;
@@ -262,31 +215,26 @@
             border-radius: 50%;
             animation: spin 0.9s linear infinite;
         }
-        .loading-text {
-            margin-top: 16px;
-            color: var(--primary);
-            font-weight: 500;
-            font-size: 15px;
-        }
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
-
-        /* ===== 自定义信息弹窗 ===== */
+        .loading-text {
+            margin-top: 16px;
+            color: var(--primary);
+            font-weight: 500;
+        }
         .info-popup {
             position: absolute;
             background: var(--card-bg);
             border-radius: var(--radius);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
             padding: 22px 26px 20px 26px;
             max-width: 380px;
-            width: max-content;
             min-width: 220px;
             z-index: 20;
             display: none;
-            pointer-events: auto;
             border: 1px solid rgba(43, 123, 182, 0.08);
             animation: popFade 0.2s ease;
         }
@@ -303,7 +251,6 @@
                 transform: translateY(0) scale(1);
             }
         }
-
         .info-popup .popup-close {
             position: absolute;
             top: 10px;
@@ -313,22 +260,17 @@
             font-size: 20px;
             color: #aabccf;
             cursor: pointer;
-            transition: var(--transition);
-            line-height: 1;
-            padding: 2px 4px;
+            transition: 0.25s;
         }
         .info-popup .popup-close:hover {
             color: var(--primary);
-            transform: rotate(90deg);
         }
-
         .info-popup .uni-name {
             font-size: 20px;
             font-weight: 700;
             color: #0a1a2a;
             margin-right: 28px;
             margin-bottom: 6px;
-            line-height: 1.3;
         }
         .info-popup .uni-tags {
             display: flex;
@@ -370,7 +312,6 @@
             color: #9a3b4a;
             border-color: #f8bbd0;
         }
-
         .info-popup .uni-website {
             margin: 8px 0 10px 0;
         }
@@ -380,40 +321,24 @@
             font-weight: 500;
             font-size: 14px;
             border-bottom: 1.5px solid transparent;
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
+            transition: 0.25s;
         }
         .info-popup .uni-website a:hover {
             border-bottom-color: var(--primary);
-            color: var(--primary-dark);
         }
         .info-popup .uni-website a::after {
             content: '↗';
             font-size: 14px;
         }
-
         .info-popup .uni-desc {
             font-size: 14px;
             line-height: 1.6;
             color: #2a3a4e;
             max-height: 100px;
             overflow-y: auto;
-            padding-right: 4px;
-            margin-top: 2px;
             border-top: 1px solid #eef4f9;
             padding-top: 10px;
         }
-        .info-popup .uni-desc::-webkit-scrollbar {
-            width: 4px;
-        }
-        .info-popup .uni-desc::-webkit-scrollbar-thumb {
-            background: #cbdae8;
-            border-radius: 4px;
-        }
-
-        /* 弹窗定位小三角 */
         .info-popup::before {
             content: '';
             position: absolute;
@@ -423,7 +348,6 @@
             border-left: 10px solid transparent;
             border-right: 10px solid transparent;
             border-top: 10px solid var(--card-bg);
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.04));
         }
         .info-popup.popup-top::before {
             bottom: auto;
@@ -431,8 +355,6 @@
             border-top: none;
             border-bottom: 10px solid var(--card-bg);
         }
-
-        /* ===== 添加大学模态框 ===== */
         .modal-overlay {
             position: fixed;
             inset: 0;
@@ -453,10 +375,9 @@
             max-width: 500px;
             width: 100%;
             padding: 32px 36px 28px 36px;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.20);
-            animation: modalIn 0.25s ease;
             max-height: 90vh;
             overflow-y: auto;
+            animation: modalIn 0.25s ease;
         }
         @keyframes modalIn {
             0% {
@@ -498,17 +419,16 @@
             border: 2px solid #dce7f3;
             border-radius: 10px;
             font-size: 14px;
-            transition: var(--transition);
             background: var(--bg);
             font-family: var(--font);
             color: #1e2a3a;
+            transition: 0.25s;
         }
         .modal-box input:focus,
         .modal-box select:focus,
         .modal-box textarea:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 4px rgba(43, 123, 182, 0.10);
             background: #fff;
         }
         .modal-box textarea {
@@ -535,7 +455,7 @@
             font-weight: 600;
             border: none;
             cursor: pointer;
-            transition: var(--transition);
+            transition: 0.25s;
         }
         .modal-box .btn-cancel {
             background: #eef4f9;
@@ -550,56 +470,21 @@
         }
         .modal-box .btn-submit:hover {
             background: var(--primary-dark);
-            box-shadow: 0 4px 14px rgba(43, 123, 182, 0.30);
         }
-        .modal-box .btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-
-        /* ===== 响应式 ===== */
         @media (max-width: 768px) {
             .toolbar {
                 padding: 10px 16px;
-                gap: 8px 12px;
-            }
-            .toolbar-left .logo {
-                font-size: 17px;
-            }
-            .logo span {
-                font-size: 12px;
             }
             .toolbar-center {
                 flex: 1 1 100%;
                 order: 3;
                 min-width: 0;
             }
-            .toolbar-right {
-                margin-left: auto;
-            }
-            .btn-add {
-                padding: 6px 14px;
-                font-size: 13px;
-            }
-            .stats-badge {
-                font-size: 11px;
-                padding: 2px 10px;
-            }
             .filter-bar {
                 padding: 6px 16px 10px 16px;
-                gap: 6px 10px;
-            }
-            .filter-btn {
-                padding: 3px 12px;
-                font-size: 12px;
             }
             .info-popup {
                 max-width: 300px;
-                padding: 18px 20px 16px 20px;
-                font-size: 14px;
-            }
-            .info-popup .uni-name {
-                font-size: 17px;
             }
             .modal-box {
                 padding: 24px 20px 20px 20px;
@@ -609,65 +494,6 @@
                 gap: 0;
             }
         }
-
-        @media (max-width: 420px) {
-            .toolbar {
-                padding: 8px 12px;
-            }
-            .logo {
-                font-size: 15px;
-            }
-            .filter-bar .filter-label {
-                font-size: 12px;
-            }
-            .filter-btn {
-                font-size: 11px;
-                padding: 2px 10px;
-            }
-            .info-popup {
-                max-width: 260px;
-                padding: 14px 16px 14px 16px;
-            }
-            .info-popup .uni-name {
-                font-size: 16px;
-            }
-        }
-
-        /* ===== 滚动条美化 ===== */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbdae8;
-            border-radius: 8px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #aabccf;
-        }
-
-        /* ===== 搜索提示 ===== */
-        .search-toast {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.70);
-            color: #fff;
-            padding: 12px 28px;
-            border-radius: 12px;
-            font-size: 15px;
-            font-weight: 500;
-            z-index: 15;
-            pointer-events: none;
-            backdrop-filter: blur(4px);
-            animation: popFade 0.2s ease;
-        }
-
-        /* ===== 重试覆盖层 ===== */
         .retry-overlay {
             position: absolute;
             inset: 0;
@@ -678,14 +504,13 @@
             background: rgba(234, 241, 250, 0.80);
             z-index: 6;
             pointer-events: auto;
-            cursor: default;
             font-family: var(--font);
         }
         .retry-box {
             background: white;
             padding: 24px 40px;
             border-radius: 16px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.10);
             text-align: center;
             max-width: 90%;
         }
@@ -712,11 +537,25 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
         }
         .retry-box button:hover {
             background: var(--primary-dark);
-            transform: translateY(-1px);
+        }
+        .search-toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.70);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            z-index: 15;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            animation: popFade 0.2s ease;
         }
     </style>
 </head>
@@ -731,7 +570,6 @@
                 <span>· 中国高校分布</span>
             </div>
         </div>
-
         <div class="toolbar-center">
             <div class="search-box">
                 <span class="search-icon">🔍</span>
@@ -739,7 +577,6 @@
                 <button class="clear-btn" id="clearSearchBtn" aria-label="清空搜索">✕</button>
             </div>
         </div>
-
         <div class="toolbar-right">
             <span class="stats-badge" id="statsBadge">共 <strong>0</strong> 所</span>
             <button class="btn-add" id="addUniBtn">➕ 添加大学</button>
@@ -747,7 +584,7 @@
     </header>
 
     <!-- ===== 筛选栏 ===== -->
-    <nav class="filter-bar" id="filterBar">
+    <nav class="filter-bar">
         <span class="filter-label">🏷️ 筛选：</span>
         <button class="filter-btn active" data-filter="all">全部</button>
         <button class="filter-btn" data-filter="双一流">🌟 双一流</button>
@@ -760,12 +597,10 @@
     <!-- ===== 地图容器 ===== -->
     <div id="map-container">
         <div id="map-chart"></div>
-        <!-- 加载状态 -->
         <div class="loading-overlay" id="loadingOverlay">
             <div class="loading-spinner"></div>
-            <div class="loading-text">加载地图数据…</div>
+            <div class="loading-text" id="loadingText">加载地图数据…</div>
         </div>
-        <!-- 自定义弹窗 -->
         <div class="info-popup" id="infoPopup">
             <button class="popup-close" id="popupClose">✕</button>
             <div class="uni-name" id="popupName">北京大学</div>
@@ -782,10 +617,8 @@
         <div class="modal-box">
             <h2>📌 添加大学</h2>
             <div class="sub">填写信息后，大学将出现在地图上（保存在本地浏览器中）</div>
-
             <label>大学名称 <span class="required">*</span></label>
             <input type="text" id="formName" placeholder="例如：西湖大学" />
-
             <div class="form-row">
                 <div>
                     <label>经度 <span class="required">*</span></label>
@@ -796,7 +629,6 @@
                     <input type="number" id="formLat" placeholder="例如：30.2741" step="any" />
                 </div>
             </div>
-
             <label>办学层次 <span class="required">*</span></label>
             <select id="formLevel">
                 <option value="双一流">🌟 双一流</option>
@@ -805,13 +637,10 @@
                 <option value="普通本科">🎯 普通本科</option>
                 <option value="专科">🔧 专科</option>
             </select>
-
             <label>官方链接</label>
             <input type="url" id="formWebsite" placeholder="https://example.edu.cn" />
-
             <label>简介</label>
             <textarea id="formDesc" placeholder="请输入大学简介…" rows="2"></textarea>
-
             <div class="form-actions">
                 <button class="btn-cancel" id="modalCancel">取消</button>
                 <button class="btn-submit" id="modalSubmit">确认添加</button>
@@ -821,10 +650,8 @@
 
     <script>
         // ================================================================
-        //  1. 数据
+        //  数据 & 状态
         // ================================================================
-
-        // 预置大学数据（约45所，覆盖全国主要城市 & 各层次）
         const DEFAULT_UNIVERSITIES = [{
             id: 1,
             name: '北京大学',
@@ -832,7 +659,7 @@
             lat: 39.9042,
             level: '双一流',
             website: 'https://www.pku.edu.cn',
-            desc: '北京大学创立于1898年，是中国近代第一所国立大学，以文理医工见长，综合实力位居全国前列。'
+            desc: '北京大学创立于1898年，是中国近代第一所国立大学。'
         }, {
             id: 2,
             name: '清华大学',
@@ -840,354 +667,233 @@
             lat: 40.0031,
             level: '双一流',
             website: 'https://www.tsinghua.edu.cn',
-            desc: '清华大学始建于1911年，中国顶尖工科大学，被誉为“红色工程师的摇篮”，综合实力享誉全球。'
+            desc: '清华大学始建于1911年，中国顶尖工科大学。'
         }, {
             id: 3,
-            name: '中国人民大学',
-            lng: 116.3195,
-            lat: 39.9672,
-            level: '985工程',
-            website: 'https://www.ruc.edu.cn',
-            desc: '中国人民大学成立于1937年，以人文社会科学见长，是中国哲学社会科学研究的重要基地。'
-        }, {
-            id: 4,
-            name: '北京师范大学',
-            lng: 116.3655,
-            lat: 39.9606,
-            level: '985工程',
-            website: 'https://www.bnu.edu.cn',
-            desc: '北京师范大学创办于1902年，是中国最早的现代师范教育高等学府，以教师教育、文理基础学科为特色。'
-        }, {
-            id: 5,
-            name: '北京航空航天大学',
-            lng: 116.3526,
-            lat: 39.9819,
-            level: '985工程',
-            website: 'https://www.buaa.edu.cn',
-            desc: '北航创建于1952年，新中国第一所航空航天高等学府，在航空航天、信息、材料等领域具有显著优势。'
-        }, {
-            id: 6,
-            name: '北京理工大学',
-            lng: 116.3158,
-            lat: 39.9572,
-            level: '985工程',
-            website: 'https://www.bit.edu.cn',
-            desc: '北京理工大学创立于1940年，以国防科技为特色，在兵器、车辆、信息等领域享有盛誉。'
-        }, {
-            id: 7,
-            name: '中国农业大学',
-            lng: 116.3568,
-            lat: 40.0142,
-            level: '985工程',
-            website: 'https://www.cau.edu.cn',
-            desc: '中国农业大学始建于1905年，中国现代农业高等教育的发源地，以农业科学和生命科学为优势。'
-        }, {
-            id: 8,
-            name: '中央民族大学',
-            lng: 116.3186,
-            lat: 39.9476,
-            level: '985工程',
-            website: 'https://www.muc.edu.cn',
-            desc: '中央民族大学成立于1941年，是中国民族高等教育的最高学府，以民族学、社会学、文化学为特色。'
-        }, {
-            id: 9,
             name: '复旦大学',
             lng: 121.4994,
             lat: 31.2989,
             level: '双一流',
             website: 'https://www.fudan.edu.cn',
-            desc: '复旦大学创建于1905年，中国顶尖综合性研究型大学，在人文、社科、医学、理工等领域均实力雄厚。'
+            desc: '复旦大学创建于1905年，综合性研究型大学。'
         }, {
-            id: 10,
+            id: 4,
             name: '上海交通大学',
             lng: 121.4333,
             lat: 31.0282,
             level: '双一流',
             website: 'https://www.sjtu.edu.cn',
-            desc: '上海交通大学创办于1896年，中国历史最悠久的高等学府之一，以工科、商科、医学见长。'
+            desc: '上海交通大学创办于1896年，以工科、商科见长。'
         }, {
-            id: 11,
-            name: '同济大学',
-            lng: 121.4919,
-            lat: 31.2866,
-            level: '985工程',
-            website: 'https://www.tongji.edu.cn',
-            desc: '同济大学始建于1907年，以土木建筑、环境工程、交通运输等学科享誉海内外。'
-        }, {
-            id: 12,
-            name: '华东师范大学',
-            lng: 121.3947,
-            lat: 31.2286,
-            level: '985工程',
-            website: 'https://www.ecnu.edu.cn',
-            desc: '华东师范大学成立于1951年，中国师范教育的重镇，以教育学、心理学、地理学等学科为特色。'
-        }, {
-            id: 13,
-            name: '南京大学',
-            lng: 118.7831,
-            lat: 32.0603,
-            level: '双一流',
-            website: 'https://www.nju.edu.cn',
-            desc: '南京大学源于1902年，中国现代科学的发祥地之一，以文理基础学科见长，综合实力位居全国前列。'
-        }, {
-            id: 14,
-            name: '东南大学',
-            lng: 118.7928,
-            lat: 32.0608,
-            level: '985工程',
-            website: 'https://www.seu.edu.cn',
-            desc: '东南大学创建于1902年，以工科为主，在建筑、土木、电子、信息等领域具有突出优势。'
-        }, {
-            id: 15,
+            id: 5,
             name: '浙江大学',
             lng: 120.1551,
             lat: 30.2741,
             level: '双一流',
             website: 'https://www.zju.edu.cn',
-            desc: '浙江大学创立于1897年，中国顶尖综合性大学，学科门类齐全，工科、农科、医科均实力强劲。'
+            desc: '浙江大学创立于1897年，学科门类齐全。'
         }, {
-            id: 16,
+            id: 6,
+            name: '南京大学',
+            lng: 118.7831,
+            lat: 32.0603,
+            level: '双一流',
+            website: 'https://www.nju.edu.cn',
+            desc: '南京大学源于1902年，文理基础学科见长。'
+        }, {
+            id: 7,
             name: '中国科学技术大学',
             lng: 117.2830,
             lat: 31.8418,
             level: '双一流',
             website: 'https://www.ustc.edu.cn',
-            desc: '中国科大创建于1958年，以前沿科学和高新技术为特色，被誉为“科学家的摇篮”。'
+            desc: '中国科大创建于1958年，前沿科学为特色。'
         }, {
-            id: 17,
+            id: 8,
             name: '武汉大学',
             lng: 114.3656,
             lat: 30.5408,
             level: '双一流',
             website: 'https://www.whu.edu.cn',
-            desc: '武汉大学溯源于1893年，中国最美大学之一，以法学、测绘、遥感、水利等学科享誉全国。'
+            desc: '武汉大学溯源于1893年，中国最美大学之一。'
         }, {
-            id: 18,
-            name: '华中科技大学',
-            lng: 114.4076,
-            lat: 30.5132,
-            level: '985工程',
-            website: 'https://www.hust.edu.cn',
-            desc: '华中科技大学成立于1952年，以工科和医科为优势，在机械、光电、医学等领域实力突出。'
-        }, {
-            id: 19,
+            id: 9,
             name: '中山大学',
             lng: 113.2644,
             lat: 23.1291,
             level: '双一流',
             website: 'https://www.sysu.edu.cn',
-            desc: '中山大学由孙中山先生创办于1924年，华南地区最高学府，以文理医工综合发展著称。'
+            desc: '中山大学由孙中山创办于1924年。'
         }, {
-            id: 20,
-            name: '华南理工大学',
-            lng: 113.3527,
-            lat: 23.1567,
-            level: '985工程',
-            website: 'https://www.scut.edu.cn',
-            desc: '华南理工大学组建于1952年，以工科为主，在建筑、材料、轻工、食品等领域具有显著优势。'
-        }, {
-            id: 21,
+            id: 10,
             name: '四川大学',
             lng: 104.0746,
             lat: 30.6305,
             level: '双一流',
             website: 'https://www.scu.edu.cn',
-            desc: '四川大学创建于1896年，西南地区最高学府，以医学、文理、工科综合发展著称。'
+            desc: '四川大学创建于1896年，西南最高学府。'
         }, {
-            id: 22,
-            name: '电子科技大学',
-            lng: 104.0711,
-            lat: 30.6732,
-            level: '985工程',
-            website: 'https://www.uestc.edu.cn',
-            desc: '电子科技大学成立于1956年，中国电子信息领域顶尖高校，在通信、电子、计算机等学科实力突出。'
-        }, {
-            id: 23,
-            name: '重庆大学',
-            lng: 106.4756,
-            lat: 29.5546,
-            level: '985工程',
-            website: 'https://www.cqu.edu.cn',
-            desc: '重庆大学创办于1929年，西南地区工科重镇，以建筑、土木、机械、电气等学科为特色。'
-        }, {
-            id: 24,
+            id: 11,
             name: '西安交通大学',
             lng: 108.9849,
             lat: 34.2481,
             level: '双一流',
             website: 'https://www.xjtu.edu.cn',
-            desc: '西安交通大学创建于1896年，西部第一学府，以工科、管理、医学见长，综合实力雄厚。'
+            desc: '西安交通大学创建于1896年，西部第一学府。'
         }, {
-            id: 25,
-            name: '西北工业大学',
-            lng: 108.9145,
-            lat: 34.2489,
-            level: '985工程',
-            website: 'https://www.nwpu.edu.cn',
-            desc: '西北工业大学成立于1938年，以航空、航天、航海为特色，是中国国防科技工业的重要基地。'
-        }, {
-            id: 26,
-            name: '兰州大学',
-            lng: 103.8517,
-            lat: 36.0485,
-            level: '985工程',
-            website: 'https://www.lzu.edu.cn',
-            desc: '兰州大学创建于1909年，西北地区历史最悠久的高等学府，以化学、物理、生态学等学科为优势。'
-        }, {
-            id: 27,
-            name: '山东大学',
-            lng: 117.1184,
-            lat: 36.6767,
-            level: '985工程',
-            website: 'https://www.sdu.edu.cn',
-            desc: '山东大学创办于1901年，中国近代高等教育的起源性大学之一，以文理医工综合发展。'
-        }, {
-            id: 28,
-            name: '中国海洋大学',
-            lng: 120.3697,
-            lat: 36.0676,
-            level: '985工程',
-            website: 'https://www.ouc.edu.cn',
-            desc: '中国海洋大学创建于1924年，以海洋和水产学科为特色，是中国海洋科学研究的领军高校。'
-        }, {
-            id: 29,
-            name: '厦门大学',
-            lng: 118.0906,
-            lat: 24.4457,
-            level: '985工程',
-            website: 'https://www.xmu.edu.cn',
-            desc: '厦门大学由著名爱国华侨陈嘉庚创办于1921年，中国最美大学之一，以经济、管理、法律等学科见长。'
-        }, {
-            id: 30,
-            name: '南开大学',
-            lng: 117.1782,
-            lat: 39.1045,
-            level: '985工程',
-            website: 'https://www.nankai.edu.cn',
-            desc: '南开大学创建于1919年，以文理基础学科见长，经济、历史、数学等学科享有盛誉。'
-        }, {
-            id: 31,
-            name: '天津大学',
-            lng: 117.1798,
-            lat: 39.1095,
-            level: '985工程',
-            website: 'https://www.tju.edu.cn',
-            desc: '天津大学始建于1895年，中国第一所现代大学，以工科为主，在化工、建筑、精密仪器等领域实力突出。'
-        }, {
-            id: 32,
-            name: '大连理工大学',
-            lng: 121.6118,
-            lat: 38.9093,
-            level: '985工程',
-            website: 'https://www.dlut.edu.cn',
-            desc: '大连理工大学创建于1949年，以工科为主，在化工、力学、船舶、机械等领域具有显著优势。'
-        }, {
-            id: 33,
-            name: '东北大学',
-            lng: 123.4138,
-            lat: 41.7716,
-            level: '985工程',
-            website: 'https://www.neu.edu.cn',
-            desc: '东北大学始建于1923年，以工科为主，在冶金、材料、自动化等领域享有盛誉。'
-        }, {
-            id: 34,
-            name: '吉林大学',
-            lng: 125.2765,
-            lat: 43.8696,
-            level: '985工程',
-            website: 'https://www.jlu.edu.cn',
-            desc: '吉林大学创建于1946年，学科门类齐全，以化学、车辆工程、医学等学科为特色。'
-        }, {
-            id: 35,
+            id: 12,
             name: '哈尔滨工业大学',
             lng: 126.6536,
             lat: 45.7354,
             level: '双一流',
             website: 'https://www.hit.edu.cn',
-            desc: '哈工大创建于1920年，中国航天工业的摇篮，以航天、机械、材料、计算机等学科享誉全球。'
+            desc: '哈工大创建于1920年，航天工业的摇篮。'
         }, {
-            id: 36,
-            name: '中南大学',
-            lng: 112.9488,
-            lat: 28.1685,
+            id: 13,
+            name: '中国人民大学',
+            lng: 116.3195,
+            lat: 39.9672,
             level: '985工程',
-            website: 'https://www.csu.edu.cn',
-            desc: '中南大学组建于2000年，以工科和医科为优势，在冶金、材料、医学等领域实力突出。'
+            website: 'https://www.ruc.edu.cn',
+            desc: '中国人民大学成立于1937年，人文社科见长。'
         }, {
-            id: 37,
-            name: '湖南大学',
-            lng: 112.9282,
-            lat: 28.1747,
+            id: 14,
+            name: '北京师范大学',
+            lng: 116.3655,
+            lat: 39.9606,
             level: '985工程',
-            website: 'https://www.hnu.edu.cn',
-            desc: '湖南大学起源于976年岳麓书院，中国历史最悠久的高等学府之一，以工科、经济、法学为特色。'
+            website: 'https://www.bnu.edu.cn',
+            desc: '北京师范大学创办于1902年，师范教育发源地。'
         }, {
-            id: 38,
-            name: '西北农林科技大学',
-            lng: 108.0770,
-            lat: 34.3009,
+            id: 15,
+            name: '同济大学',
+            lng: 121.4919,
+            lat: 31.2866,
             level: '985工程',
-            website: 'https://www.nwsuaf.edu.cn',
-            desc: '西北农林科技大学创建于1934年，以农林水学科为特色，是中国西北地区农业科技创新的重要基地。'
+            website: 'https://www.tongji.edu.cn',
+            desc: '同济大学始建于1907年，土木建筑闻名。'
         }, {
-            id: 39,
+            id: 16,
+            name: '华中科技大学',
+            lng: 114.4076,
+            lat: 30.5132,
+            level: '985工程',
+            website: 'https://www.hust.edu.cn',
+            desc: '华中科技大学成立于1952年，工科医科优势。'
+        }, {
+            id: 17,
+            name: '华南理工大学',
+            lng: 113.3527,
+            lat: 23.1567,
+            level: '985工程',
+            website: 'https://www.scut.edu.cn',
+            desc: '华南理工大学组建于1952年，工科为主。'
+        }, {
+            id: 18,
+            name: '电子科技大学',
+            lng: 104.0711,
+            lat: 30.6732,
+            level: '985工程',
+            website: 'https://www.uestc.edu.cn',
+            desc: '电子科技大学成立于1956年，电子信息顶尖。'
+        }, {
+            id: 19,
+            name: '重庆大学',
+            lng: 106.4756,
+            lat: 29.5546,
+            level: '985工程',
+            website: 'https://www.cqu.edu.cn',
+            desc: '重庆大学创办于1929年，西南工科重镇。'
+        }, {
+            id: 20,
+            name: '西北工业大学',
+            lng: 108.9145,
+            lat: 34.2489,
+            level: '985工程',
+            website: 'https://www.nwpu.edu.cn',
+            desc: '西北工业大学成立于1938年，航空航海军工。'
+        }, {
+            id: 21,
+            name: '兰州大学',
+            lng: 103.8517,
+            lat: 36.0485,
+            level: '985工程',
+            website: 'https://www.lzu.edu.cn',
+            desc: '兰州大学创建于1909年，西北历史名校。'
+        }, {
+            id: 22,
+            name: '山东大学',
+            lng: 117.1184,
+            lat: 36.6767,
+            level: '985工程',
+            website: 'https://www.sdu.edu.cn',
+            desc: '山东大学创办于1901年，文理医工综合。'
+        }, {
+            id: 23,
+            name: '厦门大学',
+            lng: 118.0906,
+            lat: 24.4457,
+            level: '985工程',
+            website: 'https://www.xmu.edu.cn',
+            desc: '厦门大学由陈嘉庚创办于1921年，最美校园。'
+        }, {
+            id: 24,
+            name: '南开大学',
+            lng: 117.1782,
+            lat: 39.1045,
+            level: '985工程',
+            website: 'https://www.nankai.edu.cn',
+            desc: '南开大学创建于1919年，文理基础学科。'
+        }, {
+            id: 25,
+            name: '天津大学',
+            lng: 117.1798,
+            lat: 39.1095,
+            level: '985工程',
+            website: 'https://www.tju.edu.cn',
+            desc: '天津大学始建于1895年，中国第一所现代大学。'
+        }, {
+            id: 26,
             name: '上海师范大学',
             lng: 121.3947,
             lat: 31.1567,
             level: '普通本科',
             website: 'https://www.shnu.edu.cn',
-            desc: '上海师范大学成立于1954年，以教师教育和人文社科为特色，是上海市重点建设的高水平大学。'
+            desc: '上海师范大学成立于1954年，教师教育特色。'
         }, {
-            id: 40,
+            id: 27,
             name: '浙江工业大学',
             lng: 120.1551,
             lat: 30.2911,
             level: '普通本科',
             website: 'https://www.zjut.edu.cn',
-            desc: '浙江工业大学创建于1953年，以工科为主，在化工、机械、生物工程等领域具有较强实力。'
+            desc: '浙江工业大学创建于1953年，工科为主。'
         }, {
-            id: 41,
-            name: '南京邮电大学',
-            lng: 118.7928,
-            lat: 32.0608,
-            level: '普通本科',
-            website: 'https://www.njupt.edu.cn',
-            desc: '南京邮电大学创办于1942年，以信息通信为特色，是中国邮电通信领域的重要人才培养基地。'
-        }, {
-            id: 42,
+            id: 28,
             name: '深圳大学',
             lng: 113.9290,
             lat: 22.5310,
             level: '普通本科',
             website: 'https://www.szu.edu.cn',
-            desc: '深圳大学创建于1983年，伴随深圳特区成长，以创新创业为特色，综合实力快速提升。'
+            desc: '深圳大学创建于1983年，特区大学。'
         }, {
-            id: 43,
+            id: 29,
             name: '广州大学',
             lng: 113.3702,
             lat: 23.0386,
             level: '普通本科',
             website: 'https://www.gzhu.edu.cn',
-            desc: '广州大学成立于1927年，以文理为基础，在土木、建筑、环境等学科领域具有区域优势。'
+            desc: '广州大学成立于1927年，区域优势。'
         }, {
-            id: 44,
+            id: 30,
             name: '深圳职业技术学院',
             lng: 113.9340,
             lat: 22.5590,
             level: '专科',
             website: 'https://www.szpt.edu.cn',
-            desc: '深圳职业技术学院成立于1993年，是中国高职教育的标杆院校，以应用型人才培养为特色。'
-        }, {
-            id: 45,
-            name: '北京电子科技职业学院',
-            lng: 116.3568,
-            lat: 39.8142,
-            level: '专科',
-            website: 'https://www.bpi.edu.cn',
-            desc: '北京电子科技职业学院是北京市属高职院校，以电子信息、智能制造等专业为特色。'
+            desc: '深圳职业技术学院成立于1993年，高职标杆。'
         }];
 
-        // 层次标签的显示名 & CSS class
         const LEVEL_MAP = {
             '双一流': { label: '🌟 双一流', cls: 'dual' },
             '985工程': { label: '🏛️ 985工程', cls: 'nine' },
@@ -1196,21 +902,16 @@
             '专科': { label: '🔧 专科', cls: 'vocational' },
         };
 
-        // ================================================================
-        //  2. 状态管理
-        // ================================================================
-
         let allUniversities = [];
         let currentFilter = 'all';
         let searchQuery = '';
         let selectedId = null;
         let chartInstance = null;
-        let geoData = null;
         let isMapLoaded = false;
 
-        // DOM 引用
         const chartDom = document.getElementById('map-chart');
         const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingText = document.getElementById('loadingText');
         const searchInput = document.getElementById('searchInput');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const statsBadge = document.getElementById('statsBadge');
@@ -1233,9 +934,8 @@
         const formDesc = document.getElementById('formDesc');
 
         // ================================================================
-        //  3. 数据管理
+        //  数据管理
         // ================================================================
-
         function loadData() {
             const stored = localStorage.getItem('uniMap_data');
             if (stored) {
@@ -1245,7 +945,7 @@
                         allUniversities = parsed;
                         return;
                     }
-                } catch (_) { /* ignore */ }
+                } catch (_) {}
             }
             allUniversities = JSON.parse(JSON.stringify(DEFAULT_UNIVERSITIES));
             saveData();
@@ -1257,9 +957,7 @@
 
         function getFilteredData() {
             let result = allUniversities;
-            if (currentFilter !== 'all') {
-                result = result.filter(u => u.level === currentFilter);
-            }
+            if (currentFilter !== 'all') result = result.filter(u => u.level === currentFilter);
             if (searchQuery.trim()) {
                 const q = searchQuery.trim().toLowerCase();
                 result = result.filter(u => u.name.toLowerCase().includes(q));
@@ -1272,8 +970,7 @@
         }
 
         function genId() {
-            const maxId = allUniversities.reduce((max, u) => Math.max(max, u.id), 0);
-            return maxId + 1;
+            return allUniversities.reduce((max, u) => Math.max(max, u.id), 0) + 1;
         }
 
         function addUniversity(data) {
@@ -1292,34 +989,51 @@
         }
 
         // ================================================================
-        //  4. 地图渲染
+        //  地图加载（多源重试）
         // ================================================================
+        const GEO_SOURCES = [
+            'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json',
+            'https://cdn.jsdelivr.net/npm/echarts@5.4.3/map/json/china.json',
+            'https://unpkg.com/echarts@5.4.3/map/json/china.json',
+            'https://echarts.apache.org/examples/data/asset/geo/china.json'
+        ];
 
-        function initChart() {
-            chartInstance = echarts.init(chartDom, null, { renderer: 'canvas' });
-            window.addEventListener('resize', () => chartInstance && chartInstance.resize());
+        async function loadGeoWithRetry() {
+            let lastError = null;
+            for (let i = 0; i < GEO_SOURCES.length; i++) {
+                const url = GEO_SOURCES[i];
+                loadingText.textContent = `加载地图数据 (尝试 ${i+1}/${GEO_SOURCES.length})…`;
+                try {
+                    const resp = await fetch(url, { cache: 'force-cache' });
+                    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+                    const data = await resp.json();
+                    // 简单校验
+                    if (!data || !data.features || data.features.length === 0) {
+                        throw new Error('数据格式无效');
+                    }
+                    return data;
+                } catch (err) {
+                    console.warn(`源 ${url} 加载失败:`, err);
+                    lastError = err;
+                    // 等待一下再尝试下一个
+                    await new Promise(r => setTimeout(r, 300));
+                }
+            }
+            throw new Error(`所有地图数据源均加载失败，最后错误: ${lastError?.message || '未知'}`);
         }
 
-        /** 加载 GeoJSON 并渲染地图（使用国内高速 DataV 源） */
         async function loadGeoAndRender() {
             try {
                 loadingOverlay.classList.remove('hidden');
-                // 使用阿里云 DataV 的 GeoJSON 接口（国内高速，稳定）
-                const url = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
-                const resp = await fetch(url, {
-                    // 添加缓存控制，避免重复请求
-                    cache: 'force-cache'
-                });
-                if (!resp.ok) throw new Error(`网络请求失败 (HTTP ${resp.status})`);
-                geoData = await resp.json();
-                echarts.registerMap('china', geoData);
+                loadingText.textContent = '加载地图数据…';
+                const geoJson = await loadGeoWithRetry();
+                echarts.registerMap('china', geoJson);
                 isMapLoaded = true;
                 renderMap();
                 loadingOverlay.classList.add('hidden');
             } catch (err) {
-                console.error('地图数据加载失败:', err);
+                console.error('地图加载最终失败:', err);
                 loadingOverlay.classList.add('hidden');
-                // 显示错误重试界面
                 showRetryMessage(err.message);
             }
         }
@@ -1345,14 +1059,14 @@
             });
         }
 
-        /** 渲染地图（根据当前筛选/搜索状态） */
+        // ================================================================
+        //  渲染地图
+        // ================================================================
         function renderMap() {
-            if (!chartInstance || !isMapLoaded || !geoData) return;
-
+            if (!chartInstance || !isMapLoaded) return;
             const filtered = getFilteredData();
             const total = allUniversities.length;
             const shown = filtered.length;
-
             statsBadge.innerHTML = `共 <strong>${total}</strong> 所${shown !== total ? ` · 显示 ${shown}` : ''}`;
 
             const scatterData = filtered.map(u => ({
@@ -1388,7 +1102,6 @@
                         show: true,
                         color: '#5a7a9a',
                         fontSize: 10,
-                        fontFamily: 'system-ui',
                     },
                 },
                 series: [{
@@ -1396,15 +1109,11 @@
                     type: 'scatter',
                     coordinateSystem: 'geo',
                     data: scatterData,
-                    symbolSize: (val, params) => {
-                        return params.data.id === highlightId ? 22 : 14;
-                    },
+                    symbolSize: (val, params) => params.data.id === highlightId ? 22 : 14,
                     itemStyle: {
-                        color: (params) => {
-                            return params.data.id === highlightId ? '#c0392b' : '#e74c3c';
-                        },
+                        color: (params) => params.data.id === highlightId ? '#c0392b' : '#e74c3c',
                         shadowBlur: 6,
-                        shadowColor: 'rgba(231, 76, 60, 0.25)',
+                        shadowColor: 'rgba(231,76,60,0.25)',
                         borderColor: '#fff',
                         borderWidth: 2,
                     },
@@ -1413,7 +1122,7 @@
                         itemStyle: {
                             color: '#c0392b',
                             shadowBlur: 12,
-                            shadowColor: 'rgba(231, 76, 60, 0.40)',
+                            shadowColor: 'rgba(231,76,60,0.40)',
                             borderWidth: 2.5,
                         },
                         label: {
@@ -1428,16 +1137,11 @@
                             borderRadius: 6,
                             borderColor: 'rgba(43,123,182,0.15)',
                             borderWidth: 1,
-                            shadowBlur: 4,
-                            shadowColor: 'rgba(0,0,0,0.06)',
                         }
                     },
                     label: {
                         show: true,
-                        formatter: (params) => {
-                            if (params.data.id === highlightId) return params.data.name;
-                            return '';
-                        },
+                        formatter: (params) => params.data.id === highlightId ? params.data.name : '',
                         position: 'top',
                         color: '#0a1a2a',
                         fontSize: 12,
@@ -1460,11 +1164,10 @@
             chartInstance.off('click');
             chartInstance.on('click', (params) => {
                 if (params && params.componentType === 'series' && params.data && params.data.id) {
-                    const id = params.data.id;
-                    const uni = findUniversity(id);
+                    const uni = findUniversity(params.data.id);
                     if (uni) {
                         showPopup(uni, params.event || null);
-                        selectedId = id;
+                        selectedId = params.data.id;
                         renderMap();
                     }
                 }
@@ -1472,40 +1175,26 @@
 
             chartInstance.off('mouseover');
             chartInstance.on('mouseover', (params) => {
-                if (params && params.componentType === 'series') {
-                    chartDom.style.cursor = 'pointer';
-                }
+                if (params && params.componentType === 'series') chartDom.style.cursor = 'pointer';
             });
             chartInstance.off('mouseout');
-            chartInstance.on('mouseout', () => {
-                chartDom.style.cursor = 'default';
-            });
+            chartInstance.on('mouseout', () => { chartDom.style.cursor = 'default'; });
         }
 
         // ================================================================
-        //  5. 弹窗控制
+        //  弹窗控制
         // ================================================================
-
         function showPopup(uni, event) {
             const { name, level, website, desc } = uni;
-
             popupName.textContent = name;
 
             popupTags.innerHTML = '';
-            const levels = level.split(',').map(l => l.trim());
-            levels.forEach(lv => {
+            level.split(',').map(l => l.trim()).forEach(lv => {
                 const info = LEVEL_MAP[lv];
-                if (info) {
-                    const tag = document.createElement('span');
-                    tag.className = `uni-tag ${info.cls}`;
-                    tag.textContent = info.label;
-                    popupTags.appendChild(tag);
-                } else {
-                    const tag = document.createElement('span');
-                    tag.className = 'uni-tag';
-                    tag.textContent = lv;
-                    popupTags.appendChild(tag);
-                }
+                const tag = document.createElement('span');
+                tag.className = `uni-tag ${info ? info.cls : ''}`;
+                tag.textContent = info ? info.label : lv;
+                popupTags.appendChild(tag);
             });
 
             const linkEl = popupWebsite.querySelector('a');
@@ -1516,37 +1205,32 @@
             } else {
                 linkEl.style.display = 'none';
             }
-
             popupDesc.textContent = desc || '暂无简介信息';
 
             const container = document.getElementById('map-container');
-            const containerRect = container.getBoundingClientRect();
+            const rect = container.getBoundingClientRect();
 
             let x, y;
-            if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
-                x = event.clientX - containerRect.left;
-                y = event.clientY - containerRect.top - 20;
-            } else if (chartInstance) {
+            if (event && typeof event.clientX === 'number') {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top - 20;
+            } else {
                 const coord = chartInstance.convertToPixel('geo', [uni.lng, uni.lat]);
-                if (coord && Array.isArray(coord) && coord.length === 2) {
+                if (coord && Array.isArray(coord)) {
                     x = coord[0];
                     y = coord[1] - 30;
                 } else {
-                    x = containerRect.width / 2;
-                    y = containerRect.height / 2 - 40;
+                    x = rect.width / 2;
+                    y = rect.height / 2 - 40;
                 }
-            } else {
-                x = containerRect.width / 2;
-                y = containerRect.height / 2 - 40;
             }
 
-            const popupWidth = Math.min(380, containerRect.width - 40);
+            const popupWidth = Math.min(380, rect.width - 40);
             const popupHeight = 280;
+            let left = Math.max(12, Math.min(x - popupWidth / 2, rect.width - popupWidth - 12));
+            let top = Math.max(12, Math.min(y, rect.height - popupHeight - 12));
 
-            let left = Math.max(12, Math.min(x - popupWidth / 2, containerRect.width - popupWidth - 12));
-            let top = Math.max(12, Math.min(y, containerRect.height - popupHeight - 12));
-
-            if (y > containerRect.height - popupHeight - 30) {
+            if (y > rect.height - popupHeight - 30) {
                 top = Math.max(12, y - popupHeight - 20);
                 popup.classList.add('popup-top');
             } else {
@@ -1555,18 +1239,15 @@
 
             popup.style.left = left + 'px';
             popup.style.top = top + 'px';
-            popup.style.maxWidth = Math.min(380, containerRect.width - 40) + 'px';
+            popup.style.maxWidth = popupWidth + 'px';
             popup.classList.add('visible');
         }
 
-        function hidePopup() {
-            popup.classList.remove('visible');
-        }
+        function hidePopup() { popup.classList.remove('visible'); }
 
         // ================================================================
-        //  6. 搜索逻辑
+        //  搜索 & 筛选
         // ================================================================
-
         function performSearch() {
             const query = searchInput.value.trim();
             searchQuery = query;
@@ -1578,9 +1259,7 @@
                 if (matched) {
                     selectedId = matched.id;
                     if (chartInstance && isMapLoaded) {
-                        chartInstance.setOption({
-                            geo: { center: [matched.lng, matched.lat], zoom: 4.5 }
-                        });
+                        chartInstance.setOption({ geo: { center: [matched.lng, matched.lat], zoom: 4.5 } });
                     }
                     showPopup(matched, null);
                     renderMap();
@@ -1592,9 +1271,7 @@
                 selectedId = null;
                 hidePopup();
                 if (chartInstance && isMapLoaded) {
-                    chartInstance.setOption({
-                        geo: { center: [104, 35], zoom: 1.2 }
-                    });
+                    chartInstance.setOption({ geo: { center: [104, 35], zoom: 1.2 } });
                 }
                 renderMap();
             } else {
@@ -1619,24 +1296,17 @@
             toastTimer = setTimeout(() => div.remove(), 1500);
         }
 
-        // ================================================================
-        //  7. 筛选逻辑
-        // ================================================================
-
         function setFilter(filter) {
             currentFilter = filter;
-            filterBtns.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.filter === filter);
-            });
+            filterBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.filter === filter));
             selectedId = null;
             hidePopup();
             renderMap();
         }
 
         // ================================================================
-        //  8. 添加大学逻辑
+        //  添加大学
         // ================================================================
-
         function openAddModal() {
             addModal.classList.add('visible');
             formName.value = '';
@@ -1648,9 +1318,7 @@
             formName.focus();
         }
 
-        function closeAddModal() {
-            addModal.classList.remove('visible');
-        }
+        function closeAddModal() { addModal.classList.remove('visible'); }
 
         function handleAddSubmit() {
             const name = formName.value.trim();
@@ -1661,12 +1329,9 @@
             const desc = formDesc.value.trim();
 
             if (!name) { alert('请输入大学名称'); return; }
-            if (isNaN(lng) || lng < 73 || lng > 135) { alert('请输入有效的经度 (73~135)'); return; }
-            if (isNaN(lat) || lat < 3 || lat > 54) { alert('请输入有效的纬度 (3~54)'); return; }
-            if (allUniversities.some(u => u.name === name)) {
-                alert('该大学已存在，请勿重复添加');
-                return;
-            }
+            if (isNaN(lng) || lng < 73 || lng > 135) { alert('请输入有效经度 (73~135)'); return; }
+            if (isNaN(lat) || lat < 3 || lat > 54) { alert('请输入有效纬度 (3~54)'); return; }
+            if (allUniversities.some(u => u.name === name)) { alert('该大学已存在'); return; }
 
             const newUni = addUniversity({ name, lng, lat, level, website, desc });
             closeAddModal();
@@ -1674,9 +1339,7 @@
             else renderMap();
             selectedId = newUni.id;
             if (chartInstance && isMapLoaded) {
-                chartInstance.setOption({
-                    geo: { center: [newUni.lng, newUni.lat], zoom: 4.5 }
-                });
+                chartInstance.setOption({ geo: { center: [newUni.lng, newUni.lat], zoom: 4.5 } });
             }
             renderMap();
             showPopup(newUni, null);
@@ -1686,18 +1349,16 @@
         }
 
         // ================================================================
-        //  9. 初始化 & 事件绑定
+        //  初始化
         // ================================================================
-
         function init() {
             loadData();
-            initChart();
+            chartInstance = echarts.init(chartDom);
+            window.addEventListener('resize', () => chartInstance.resize());
             loadGeoAndRender();
 
             searchInput.addEventListener('input', performSearch);
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') performSearch();
-            });
+            searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') performSearch(); });
             clearSearchBtn.addEventListener('click', () => {
                 searchInput.value = '';
                 performSearch();
@@ -1705,9 +1366,7 @@
             });
 
             filterBtns.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    setFilter(btn.dataset.filter);
-                });
+                btn.addEventListener('click', () => setFilter(btn.dataset.filter));
             });
 
             popupClose.addEventListener('click', () => {
@@ -1719,13 +1378,9 @@
             addUniBtn.addEventListener('click', openAddModal);
             modalCancel.addEventListener('click', closeAddModal);
             modalSubmit.addEventListener('click', handleAddSubmit);
-            addModal.addEventListener('click', (e) => {
-                if (e.target === addModal) closeAddModal();
-            });
+            addModal.addEventListener('click', (e) => { if (e.target === addModal) closeAddModal(); });
             document.querySelectorAll('#addModal input, #addModal select, #addModal textarea').forEach(el => {
-                el.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') handleAddSubmit();
-                });
+                el.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleAddSubmit(); });
             });
 
             document.addEventListener('keydown', (e) => {
