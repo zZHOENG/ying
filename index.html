@@ -666,6 +666,58 @@
             backdrop-filter: blur(4px);
             animation: popFade 0.2s ease;
         }
+
+        /* ===== 重试覆盖层 ===== */
+        .retry-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(234, 241, 250, 0.80);
+            z-index: 6;
+            pointer-events: auto;
+            cursor: default;
+            font-family: var(--font);
+        }
+        .retry-box {
+            background: white;
+            padding: 24px 40px;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+            text-align: center;
+            max-width: 90%;
+        }
+        .retry-box .icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        .retry-box .title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e2a3a;
+        }
+        .retry-box .desc {
+            font-size: 14px;
+            color: #5a7a9a;
+            margin: 8px 0 16px;
+        }
+        .retry-box button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .retry-box button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -1148,10 +1200,10 @@
         //  2. 状态管理
         // ================================================================
 
-        let allUniversities = []; // 完整数据（含用户添加）
+        let allUniversities = [];
         let currentFilter = 'all';
         let searchQuery = '';
-        let selectedId = null; // 当前选中的大学ID
+        let selectedId = null;
         let chartInstance = null;
         let geoData = null;
         let isMapLoaded = false;
@@ -1184,7 +1236,6 @@
         //  3. 数据管理
         // ================================================================
 
-        /** 从 localStorage 加载数据，若没有则使用默认数据 */
         function loadData() {
             const stored = localStorage.getItem('uniMap_data');
             if (stored) {
@@ -1196,7 +1247,6 @@
                     }
                 } catch (_) { /* ignore */ }
             }
-            // 首次使用，写入默认数据
             allUniversities = JSON.parse(JSON.stringify(DEFAULT_UNIVERSITIES));
             saveData();
         }
@@ -1205,36 +1255,27 @@
             localStorage.setItem('uniMap_data', JSON.stringify(allUniversities));
         }
 
-        /** 获取当前筛选 + 搜索后的数据 */
         function getFilteredData() {
             let result = allUniversities;
-
-            // 筛选
             if (currentFilter !== 'all') {
                 result = result.filter(u => u.level === currentFilter);
             }
-
-            // 搜索
             if (searchQuery.trim()) {
                 const q = searchQuery.trim().toLowerCase();
                 result = result.filter(u => u.name.toLowerCase().includes(q));
             }
-
             return result;
         }
 
-        /** 根据ID查找大学 */
         function findUniversity(id) {
             return allUniversities.find(u => u.id === id);
         }
 
-        /** 生成新ID */
         function genId() {
             const maxId = allUniversities.reduce((max, u) => Math.max(max, u.id), 0);
             return maxId + 1;
         }
 
-        /** 添加新大学 */
         function addUniversity(data) {
             const newUni = {
                 id: genId(),
@@ -1259,15 +1300,17 @@
             window.addEventListener('resize', () => chartInstance && chartInstance.resize());
         }
 
-        /** 加载 GeoJSON 并渲染地图 */
+        /** 加载 GeoJSON 并渲染地图（使用国内高速 DataV 源） */
         async function loadGeoAndRender() {
             try {
                 loadingOverlay.classList.remove('hidden');
-                // 使用更稳定的 ECharts 官方示例数据源
-                const resp = await fetch(
-                    'https://cdn.jsdelivr.net/npm/echarts@5.4.3/map/json/china.json'
-                );
-                if (!resp.ok) throw new Error('网络请求失败 (HTTP ' + resp.status + ')');
+                // 使用阿里云 DataV 的 GeoJSON 接口（国内高速，稳定）
+                const url = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
+                const resp = await fetch(url, {
+                    // 添加缓存控制，避免重复请求
+                    cache: 'force-cache'
+                });
+                if (!resp.ok) throw new Error(`网络请求失败 (HTTP ${resp.status})`);
                 geoData = await resp.json();
                 echarts.registerMap('china', geoData);
                 isMapLoaded = true;
@@ -1276,45 +1319,23 @@
             } catch (err) {
                 console.error('地图数据加载失败:', err);
                 loadingOverlay.classList.add('hidden');
-                // 显示错误信息并提供一个重试按钮（简单提示）
-                chartInstance.setOption({
-                    title: {
-                        text: '⚠️ 地图加载失败\n' + err.message + '\n请刷新页面重试',
-                        left: 'center',
-                        top: 'center',
-                        textStyle: { fontSize: 16, color: '#5a7a9a', lineHeight: 30 }
-                    }
-                });
-                // 显示可点击重试的提示（通过覆盖层）
-                showRetryMessage();
+                // 显示错误重试界面
+                showRetryMessage(err.message);
             }
         }
 
-        function showRetryMessage() {
+        function showRetryMessage(errorMsg) {
             const container = document.getElementById('map-container');
             const old = container.querySelector('.retry-overlay');
             if (old) old.remove();
             const div = document.createElement('div');
             div.className = 'retry-overlay';
-            div.style.cssText = `
-                position: absolute;
-                inset: 0;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                background: rgba(234, 241, 250, 0.80);
-                z-index: 6;
-                pointer-events: auto;
-                cursor: pointer;
-                font-family: var(--font);
-            `;
             div.innerHTML = `
-                <div style="background: white; padding: 24px 40px; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.10); text-align: center;">
-                    <div style="font-size: 40px; margin-bottom: 10px;">🔄</div>
-                    <div style="font-size: 18px; font-weight: 600; color: #1e2a3a;">地图加载失败</div>
-                    <div style="font-size: 14px; color: #5a7a9a; margin: 8px 0 16px;">请检查网络后点击重试</div>
-                    <button id="retryBtn" style="background: var(--primary); color: white; border: none; padding: 10px 30px; border-radius: 30px; font-size: 16px; font-weight: 600; cursor: pointer;">重试加载</button>
+                <div class="retry-box">
+                    <div class="icon">🔄</div>
+                    <div class="title">地图加载失败</div>
+                    <div class="desc">${errorMsg || '请检查网络连接'}</div>
+                    <button id="retryBtn">重试加载</button>
                 </div>
             `;
             container.appendChild(div);
@@ -1332,10 +1353,8 @@
             const total = allUniversities.length;
             const shown = filtered.length;
 
-            // 更新统计
             statsBadge.innerHTML = `共 <strong>${total}</strong> 所${shown !== total ? ` · 显示 ${shown}` : ''}`;
 
-            // 构建散点数据
             const scatterData = filtered.map(u => ({
                 value: [u.lng, u.lat],
                 id: u.id,
@@ -1345,7 +1364,6 @@
                 desc: u.desc,
             }));
 
-            // 高亮选中的点
             const highlightId = selectedId;
             const option = {
                 backgroundColor: 'transparent',
@@ -1363,9 +1381,7 @@
                         shadowColor: 'rgba(43,123,182,0.06)',
                     },
                     emphasis: {
-                        itemStyle: {
-                            areaColor: '#d4e4f5',
-                        },
+                        itemStyle: { areaColor: '#d4e4f5' },
                         label: { show: false }
                     },
                     label: {
@@ -1381,13 +1397,11 @@
                     coordinateSystem: 'geo',
                     data: scatterData,
                     symbolSize: (val, params) => {
-                        const isHighlight = params.data.id === highlightId;
-                        return isHighlight ? 22 : 14;
+                        return params.data.id === highlightId ? 22 : 14;
                     },
                     itemStyle: {
                         color: (params) => {
-                            const isHighlight = params.data.id === highlightId;
-                            return isHighlight ? '#c0392b' : '#e74c3c';
+                            return params.data.id === highlightId ? '#c0392b' : '#e74c3c';
                         },
                         shadowBlur: 6,
                         shadowColor: 'rgba(231, 76, 60, 0.25)',
@@ -1438,24 +1452,20 @@
 
             chartInstance.setOption(option, true);
 
-            // 如果有点被高亮，但不在当前数据中，清除高亮
             if (highlightId && !filtered.some(u => u.id === highlightId)) {
                 selectedId = null;
                 hidePopup();
             }
 
-            // 移除旧的事件监听，避免重复绑定
             chartInstance.off('click');
             chartInstance.on('click', (params) => {
-                // 确保 params 和 params.data 存在
                 if (params && params.componentType === 'series' && params.data && params.data.id) {
                     const id = params.data.id;
                     const uni = findUniversity(id);
                     if (uni) {
-                        // 传递事件对象，但注意可能为 null
                         showPopup(uni, params.event || null);
                         selectedId = id;
-                        renderMap(); // 重新渲染以高亮
+                        renderMap();
                     }
                 }
             });
@@ -1481,7 +1491,6 @@
 
             popupName.textContent = name;
 
-            // 标签
             popupTags.innerHTML = '';
             const levels = level.split(',').map(l => l.trim());
             levels.forEach(lv => {
@@ -1499,7 +1508,6 @@
                 }
             });
 
-            // 官网
             const linkEl = popupWebsite.querySelector('a');
             if (website && website.startsWith('http')) {
                 linkEl.href = website;
@@ -1509,26 +1517,21 @@
                 linkEl.style.display = 'none';
             }
 
-            // 简介
             popupDesc.textContent = desc || '暂无简介信息';
 
-            // 定位弹窗
             const container = document.getElementById('map-container');
             const containerRect = container.getBoundingClientRect();
 
             let x, y;
-            // 如果有事件对象，使用事件坐标
             if (event && typeof event.clientX === 'number' && typeof event.clientY === 'number') {
                 x = event.clientX - containerRect.left;
                 y = event.clientY - containerRect.top - 20;
             } else if (chartInstance) {
-                // 后备：从数据中获取坐标转像素
                 const coord = chartInstance.convertToPixel('geo', [uni.lng, uni.lat]);
                 if (coord && Array.isArray(coord) && coord.length === 2) {
                     x = coord[0];
                     y = coord[1] - 30;
                 } else {
-                    // 默认居中
                     x = containerRect.width / 2;
                     y = containerRect.height / 2 - 40;
                 }
@@ -1537,14 +1540,12 @@
                 y = containerRect.height / 2 - 40;
             }
 
-            // 确保弹窗不超出边界
             const popupWidth = Math.min(380, containerRect.width - 40);
             const popupHeight = 280;
 
             let left = Math.max(12, Math.min(x - popupWidth / 2, containerRect.width - popupWidth - 12));
             let top = Math.max(12, Math.min(y, containerRect.height - popupHeight - 12));
 
-            // 如果太靠下，调整到上方
             if (y > containerRect.height - popupHeight - 30) {
                 top = Math.max(12, y - popupHeight - 20);
                 popup.classList.add('popup-top');
@@ -1571,20 +1572,14 @@
             searchQuery = query;
             clearSearchBtn.classList.toggle('visible', query.length > 0);
 
-            // 如果有搜索词，尝试定位到第一个匹配的大学
             const filtered = getFilteredData();
             if (query && filtered.length > 0) {
-                // 找到第一个匹配的（按名称包含）
                 const matched = filtered.find(u => u.name.toLowerCase().includes(query.toLowerCase()));
                 if (matched) {
                     selectedId = matched.id;
-                    // 定位地图到该点
                     if (chartInstance && isMapLoaded) {
                         chartInstance.setOption({
-                            geo: {
-                                center: [matched.lng, matched.lat],
-                                zoom: 4.5,
-                            }
+                            geo: { center: [matched.lng, matched.lat], zoom: 4.5 }
                         });
                     }
                     showPopup(matched, null);
@@ -1593,22 +1588,16 @@
                 }
             }
 
-            // 无匹配或清空搜索
             if (!query) {
                 selectedId = null;
                 hidePopup();
-                // 恢复地图视野
                 if (chartInstance && isMapLoaded) {
                     chartInstance.setOption({
-                        geo: {
-                            center: [104, 35],
-                            zoom: 1.2,
-                        }
+                        geo: { center: [104, 35], zoom: 1.2 }
                     });
                 }
                 renderMap();
             } else {
-                // 有搜索但无匹配
                 selectedId = null;
                 hidePopup();
                 renderMap();
@@ -1639,7 +1628,6 @@
             filterBtns.forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.filter === filter);
             });
-            // 清除选中的高亮
             selectedId = null;
             hidePopup();
             renderMap();
@@ -1672,12 +1660,9 @@
             const website = formWebsite.value.trim();
             const desc = formDesc.value.trim();
 
-            // 验证
             if (!name) { alert('请输入大学名称'); return; }
             if (isNaN(lng) || lng < 73 || lng > 135) { alert('请输入有效的经度 (73~135)'); return; }
             if (isNaN(lat) || lat < 3 || lat > 54) { alert('请输入有效的纬度 (3~54)'); return; }
-
-            // 检查重名
             if (allUniversities.some(u => u.name === name)) {
                 alert('该大学已存在，请勿重复添加');
                 return;
@@ -1685,10 +1670,8 @@
 
             const newUni = addUniversity({ name, lng, lat, level, website, desc });
             closeAddModal();
-            // 切换到全部筛选，并选中新添加的大学
             if (currentFilter !== 'all') setFilter('all');
             else renderMap();
-            // 定位到新大学
             selectedId = newUni.id;
             if (chartInstance && isMapLoaded) {
                 chartInstance.setOption({
@@ -1697,7 +1680,6 @@
             }
             renderMap();
             showPopup(newUni, null);
-            // 清空搜索
             searchInput.value = '';
             searchQuery = '';
             clearSearchBtn.classList.remove('visible');
@@ -1708,16 +1690,10 @@
         // ================================================================
 
         function init() {
-            // 加载数据
             loadData();
-
-            // 初始化图表
             initChart();
-
-            // 加载地图并渲染
             loadGeoAndRender();
 
-            // ---- 搜索事件 ----
             searchInput.addEventListener('input', performSearch);
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') performSearch();
@@ -1728,21 +1704,18 @@
                 searchInput.focus();
             });
 
-            // ---- 筛选事件 ----
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
                     setFilter(btn.dataset.filter);
                 });
             });
 
-            // ---- 弹窗关闭 ----
             popupClose.addEventListener('click', () => {
                 selectedId = null;
                 hidePopup();
                 renderMap();
             });
 
-            // ---- 添加大学 ----
             addUniBtn.addEventListener('click', openAddModal);
             modalCancel.addEventListener('click', closeAddModal);
             modalSubmit.addEventListener('click', handleAddSubmit);
@@ -1755,7 +1728,6 @@
                 });
             });
 
-            // ---- 键盘快捷键: ESC 关闭弹窗 ----
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') {
                     if (addModal.classList.contains('visible')) closeAddModal();
@@ -1773,7 +1745,6 @@
             });
         }
 
-        // 页面加载完成后启动
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             init();
         } else {
